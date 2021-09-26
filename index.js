@@ -33,7 +33,6 @@ const urlGen = () => {
 // Function to create chunks of URLs and promises
 const parallelFetch = () => {
   urlGen();
-  console.log(`Fetch calls have been created.`);
   for (let i = 0; i < urlList.length; i += parallelCallChunks) {
     urlListChunks.push(urlList.slice(i, i + parallelCallChunks));
   }
@@ -44,19 +43,19 @@ const parallelFetch = () => {
   let chunks = async (urlListChunks, results) => {
     let curr;
     try {
-      console.time('New promise created');
       curr = await Promise.all(
         urlListChunks.map(
           (prop) => new Promise((resolve) => setTimeout(resolve, 100, prop))
         )
       );
-      console.timeEnd('New promise created');
+      console.log('New promise created.');
       results.push(curr);
 
       Promise.all(curr.map((url) => fetch(url)))
         .then((response) => Promise.all(response.map((r) => r.json())))
         .then((result) => {
           allData.push(result);
+          console.log('New promise resolved.');
         });
     } catch (err) {
       throw err;
@@ -69,7 +68,7 @@ const parallelFetch = () => {
 
   chunks(requests.splice(0, parallelCallChunks), results)
     .then((data) => {
-      console.log(data);
+      return data;
     })
     .catch((err) => console.error(err));
 };
@@ -82,9 +81,8 @@ const findSunrise = () => {
     for (let i = 0; i < allData.length; i++) {
       Object.values(allData[i]).map((result) => {
         setTimeout(() => {
-          console.time('Saving data...');
+          console.log('Saving data...');
           sunriseList.push(result.results.sunrise);
-          console.timeEnd('Saving data...');
         }, 100);
       });
     }
@@ -112,18 +110,27 @@ const findSunrise = () => {
     // Find the index of smallest number in the array
     const index = sunriseTimesSec.indexOf(Math.min(...sunriseTimesSec));
 
+    // Find the position of the chunk in which index is located
     let chunkPosition = Math.floor(index / parallelCallChunks);
 
     console.log('All Data.', allData);
 
     console.log('\n====================================');
-    console.log(
-      `\nLongest day was found at index ${index} which lasted ${allData[chunkPosition][0].results.day_length}\n`
-    );
-    console.log(`\nURL: ${urlList[index]}\n`);
+
+    try {
+      console.log(
+        `\nLongest day was found at index ${index} which lasted ${allData[chunkPosition][0].results.day_length}.\n`
+      ),
+        console.log(`URL: ${urlList[index]}\n`);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      console.log('\nTime out. API server not responding.\n');
+    }
+
     console.log('====================================\n');
+    process.exit(1);
   }, delay);
-  console.log(`Processing... (${delay}s)`);
 };
 
 findSunrise();

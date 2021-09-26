@@ -1,7 +1,10 @@
 # sunset-sunrise-exercise
 
+
+To run this application, navigate to root folder "Sennen Coding Exercise", open terminal and type "node index.js"
+
 How does it work:
-- It generstes a set amount of random latitude and longitude coordintes
+- Generstes a set amount of random latitude and longitude coordintes
 - Injects these coordinates to an URL to be used to fetch data
 - Returns a full list of generated URLs
 - Loops over the array of URLs and chunks them into set size chunks
