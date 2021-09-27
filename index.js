@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 console.log('Sunrise/Sunset Technical Exercise');
 
 // Total number of API calls
-const totalCalls = 20;
+const totalCalls = 50;
 
 // Size of API call chunk
 const parallelCallChunks = 5;
@@ -19,7 +19,7 @@ let sunriseList = [];
 let sunriseTimesSec = [];
 
 // Generated a list of url with random coodinates
-const urlGen = () => {
+const urlGenerator = () => {
   for (let y = 0; y < totalCalls; y++) {
     let lat = (Math.random() * 180 - 90).toFixed(7); // Latitude min -90deg, max 90deg
     let lng = (Math.random() * 360 - 180).toFixed(7); //Longitude min -180deg, max 180deg
@@ -32,7 +32,9 @@ const urlGen = () => {
 
 // Function to create chunks of URLs and promises
 const parallelFetch = () => {
-  urlGen();
+  urlGenerator();
+
+  // Create new shallow array with chunked URL lists
   for (let i = 0; i < urlList.length; i += parallelCallChunks) {
     urlListChunks.push(urlList.slice(i, i + parallelCallChunks));
   }
@@ -41,27 +43,33 @@ const parallelFetch = () => {
   let results = [];
 
   let chunks = async (urlListChunks, results) => {
-    let curr;
+    let chunk;
+
+    // Create fake promised delays to fetch API data in parallel
     try {
-      curr = await Promise.all(
+      chunk = await Promise.all(
         urlListChunks.map(
           (prop) => new Promise((resolve) => setTimeout(resolve, 100, prop))
         )
       );
       console.log('New promise created.');
-      results.push(curr);
+      results.push(chunk);
 
-      Promise.all(curr.map((url) => fetch(url)))
+      // Fetch API data in chunks
+
+      Promise.all(chunk.map((url) => fetch(url)))
         .then((response) => Promise.all(response.map((r) => r.json())))
         .then((result) => {
           allData.push(result);
-          console.log('New promise resolved.');
+          setTimeout(() => {
+            console.log('Promise resolved.');
+          }, 1000);
         });
     } catch (err) {
       throw err;
     }
 
-    return curr !== undefined && requests.length
+    return chunk !== undefined && requests.length
       ? chunks(requests.splice(0, parallelCallChunks), results)
       : results;
   };
@@ -74,16 +82,13 @@ const parallelFetch = () => {
 };
 
 // Process all data to gather all sunrise times, convert to seconds, find earliest sunrise and return the longest day for selected coordinate
-const findSunrise = () => {
+const getSunriseTime = () => {
   parallelFetch();
 
   setTimeout(() => {
     for (let i = 0; i < allData.length; i++) {
       Object.values(allData[i]).map((result) => {
-        setTimeout(() => {
-          console.log('Saving data...');
-          sunriseList.push(result.results.sunrise);
-        }, 100);
+        sunriseList.push(result.results.sunrise);
       });
     }
 
@@ -109,28 +114,29 @@ const findSunrise = () => {
 
     // Find the index of smallest number in the array
     const index = sunriseTimesSec.indexOf(Math.min(...sunriseTimesSec));
+    console.log('Index:', index);
 
     // Find the position of the chunk in which index is located
     let chunkPosition = Math.floor(index / parallelCallChunks);
+    console.log('Chunk position:', chunkPosition);
 
+    console.log('All Data.', allData[chunkPosition]);
     console.log('All Data.', allData);
+
+    const longestDay = allData[chunkPosition][0].results.day_length;
 
     console.log('\n====================================');
 
-    try {
-      console.log(
-        `\nLongest day was found at index ${index} which lasted ${allData[chunkPosition][0].results.day_length}.\n`
-      ),
-        console.log(`URL: ${urlList[index]}\n`);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      console.log('\nTime out. API server not responding.\n');
-    }
+    console.log(
+      `\nLongest day was found at index ${index} which lasted ${longestDay}.\n`
+    ),
+      console.log(`URL: ${urlList[index]}\n`);
+
+    //   console.log('\nTime out. API server not responding.\n');
 
     console.log('====================================\n');
     process.exit(1);
-  }, delay);
+  }, delay + 5000);
 };
 
-findSunrise();
+getSunriseTime();

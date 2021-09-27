@@ -1,5 +1,6 @@
 # sunset-sunrise-exercise
 
+Uses https://sunrise-sunset.org/api service
 
 To run this application, navigate to root folder "Sennen Coding Exercise", open terminal and type "node index.js"
 
